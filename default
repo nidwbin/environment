@@ -1,0 +1,21 @@
+FROM archlinux:base-devel
+
+ARG user=benjamin
+
+ARG password=123
+
+ENV container docker
+
+COPY pkglist* /root/
+COPY home.tar.gz /root/
+COPY antigen.zsh /usr/share/zsh/share/
+
+RUN rm /etc/pacman.d/mirrorlist && echo "Server = https://mirrors.tuna.tsinghua.edu.cn/archlinux/\$repo/os/\$arch" > /etc/pacman.d/mirrorlist && sed -i '$a\[archlinuxcn]' /etc/pacman.conf && sed -i '$a\Server = https:\/\/mirrors.tuna.tsinghua.edu.cn\/archlinuxcn\/\$arch' /etc/pacman.conf
+
+RUN ln -s /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && pacman -Sy --needed --noconfirm archlinux-keyring sudo openssh vim zsh git curl && pacman -S --needed --noconfirm - < /root/pkglist
+
+RUN sed -i 's/# \%wheel ALL=(ALL:ALL) ALL/\%wheel ALL=(ALL:ALL) ALL/g' /etc/sudoers && useradd -m -G wheel -s /bin/zsh ${user} && echo "${user}:${password}" | chpasswd && systemctl enable sshd
+
+EXPOSE 22/tcp
+
+ENTRYPOINT ["/sbin/init"]
